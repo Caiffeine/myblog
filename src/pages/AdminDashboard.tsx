@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { LogOut, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LogOut, Trash2, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 type Post = {
@@ -19,6 +19,12 @@ type Comment = {
   created_at: string;
 };
 
+type ConfirmDialogData = {
+  type: 'post' | 'comment';
+  id: number;
+  title?: string;
+} | null;
+
 export function AdminDashboard() {
   const navigate = useNavigate();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -26,6 +32,7 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'posts' | 'comments'>('posts');
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogData>(null);
 
   // Check if user is authenticated
   useEffect(() => {
@@ -67,31 +74,39 @@ export function AdminDashboard() {
   }, []);
 
   const handleDeletePost = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this post?')) return;
-
-    setDeleting(id);
-    const { error } = await supabase.from('posts').delete().eq('id', id);
-
-    if (error) {
-      alert('Error deleting post: ' + error.message);
-    } else {
-      setPosts((prev) => prev.filter((p) => p.id !== id));
-    }
-    setDeleting(null);
+    const post = posts.find(p => p.id === id);
+    const title = typeof post?.title === 'string' ? post.title : post?.title.rendered;
+    setConfirmDialog({ type: 'post', id, title });
   };
 
   const handleDeleteComment = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this comment?')) return;
+    const comment = comments.find(c => c.id === id);
+    setConfirmDialog({ type: 'comment', id, title: comment?.user_name });
+  };
 
-    setDeleting(id);
-    const { error } = await supabase.from('comments_tbl').delete().eq('id', id);
+  const confirmDelete = async () => {
+    if (!confirmDialog) return;
 
-    if (error) {
-      alert('Error deleting comment: ' + error.message);
+    setDeleting(confirmDialog.id);
+    
+    if (confirmDialog.type === 'post') {
+      const { error } = await supabase.from('posts').delete().eq('id', confirmDialog.id);
+      if (error) {
+        alert('Error deleting post: ' + error.message);
+      } else {
+        setPosts((prev) => prev.filter((p) => p.id !== confirmDialog.id));
+      }
     } else {
-      setComments((prev) => prev.filter((c) => c.id !== id));
+      const { error } = await supabase.from('comments_tbl').delete().eq('id', confirmDialog.id);
+      if (error) {
+        alert('Error deleting comment: ' + error.message);
+      } else {
+        setComments((prev) => prev.filter((c) => c.id !== confirmDialog.id));
+      }
     }
+    
     setDeleting(null);
+    setConfirmDialog(null);
   };
 
   const handleLogout = () => {
@@ -102,6 +117,82 @@ export function AdminDashboard() {
 
   return (
     <main className="min-h-screen bg-paper px-6 py-32 md:py-40">
+      {/* Confirmation Dialog */}
+      <AnimatePresence>
+        {confirmDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50 flex items-center justify-center"
+            onClick={() => setConfirmDialog(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-paper border-2 border-red-200 rounded-lg shadow-2xl max-w-sm mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-8">
+                {/* Icon */}
+                <div className="flex justify-center mb-4">
+                  <div className="bg-red-50 p-3 rounded-full">
+                    <AlertCircle className="text-red-600" size={32} />
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h2 className="font-serif text-2xl font-semibold text-ink text-center mb-2">
+                  Confirm Deletion
+                </h2>
+
+                {/* Message */}
+                <p className="font-sans text-center text-ink/70 mb-6">
+                  {confirmDialog.type === 'post'
+                    ? `Are you sure you want to delete this post?`
+                    : `Are you sure you want to delete this comment from ${confirmDialog.title}?`}
+                </p>
+
+                {/* Preview */}
+                <div className="bg-paper/50 border border-border-color rounded p-3 mb-6">
+                  <p className="font-mono text-xs text-ink/50 mb-1">
+                    {confirmDialog.type === 'post' ? 'Post' : 'Comment by'}
+                  </p>
+                  <p className="font-sans text-sm text-ink truncate">
+                    {confirmDialog.title}
+                  </p>
+                </div>
+
+                {/* Warning */}
+                <p className="font-mono text-xs text-red-600 text-center mb-6">
+                  This action cannot be undone.
+                </p>
+
+                {/* Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setConfirmDialog(null)}
+                    className="flex-1 px-4 py-2 border border-border-color rounded font-mono text-sm text-ink hover:bg-paper/50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    disabled={deleting === confirmDialog.id}
+                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-paper rounded font-mono text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deleting === confirmDialog.id ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <motion.div
