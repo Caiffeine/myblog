@@ -29,6 +29,7 @@ export interface WPPost {
   date: string;
   title: { rendered: string };
   excerpt: { rendered: string };
+  featured_media?: string | null;
   _embedded?: {
     'wp:featuredmedia'?: Array<{ source_url: string }>;
   };
@@ -36,12 +37,19 @@ export interface WPPost {
 
 /**
  * Extract featured image URL from WordPress post data
- * Returns placeholder if no featured image exists
+ * Returns null if no featured image exists
  */
 export function getFeaturedImage(post: WPPost): string | null {
+  // Check _embedded structure first (WordPress REST API format)
   const media = post._embedded?.['wp:featuredmedia'];
   if (media && media.length > 0 && media[0].source_url) {
     return media[0].source_url;
   }
+  
+  // Check featured_media string directly (Supabase stored format)
+  if (typeof post.featured_media === 'string' && post.featured_media) {
+    return post.featured_media;
+  }
+  
   return null;
 }

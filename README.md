@@ -1,73 +1,89 @@
-# React + TypeScript + Vite
+# myblog
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, minimal blog built with React, Vite, Tailwind CSS, and Framer Motion.
 
-Currently, two official plugins are available:
+## Supabase Integration
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This project can optionally use Supabase Postgres to store and fetch posts. If Supabase is not configured, the app falls back to local mock data.
 
-## React Compiler
+### 1) Create a Supabase project
+- Create a project in Supabase.
+- In Project Settings → Database, reset the password if needed (see your connection string screenshot).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2) Get your credentials
+- Copy the Project URL and `anon` public key from Project Settings → API.
+- Do not use the session pooler URI in client-side code; use the Project URL.
 
-## Expanding the ESLint configuration
+### 3) Configure environment
+- Copy `.env.example` to `.env` and fill values:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+VITE_SUPABASE_URL=https://YOUR-PROJECT-REF.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR-ANON-PUBLIC-KEY
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Restart the dev server after changes.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 4) Create a `posts` table
+Use the SQL editor in Supabase to create a simple table that matches your mock structure. Example schema:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sql
+create table if not exists posts (
+  id bigint primary key generated always as identity,
+  title jsonb not null,            -- { rendered: string }
+  excerpt jsonb not null,          -- { rendered: string }
+  date text not null,              -- ISO date string used by formatDate()
+  featured_media text null,        -- optional URL or storage path
+  slug text unique null
+);
 ```
+
+Insert a few rows to test.
+
+### 4b) Create a `comments_tbl` for post comments
+
+Run `supabase/comments.sql` in the Supabase SQL editor to create the table and RLS policies. Schema:
+
+```sql
+create table if not exists public.comments_tbl (
+  id bigint primary key generated always as identity,
+  post_id bigint not null references public.posts(id) on delete cascade,
+  userName text not null,
+  userComment text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.comments_tbl enable row level security;
+
+create policy "Public read comments"
+on public.comments_tbl for select to anon using (true);
+
+create policy "Public insert comments"
+on public.comments_tbl for insert to anon with check (true);
+```
+
+This allows public reads and inserts via the `anon` key. Consider tightening policies if needed.
+
+### 5) Install dependencies
+
+```bash
+npm install
+```
+
+This includes `@supabase/supabase-js` added to `package.json`.
+
+### 6) Run locally
+
+```bash
+npm run dev
+```
+
+If env vars are present, `BlogsPage` and `PostDetailPage` will fetch from Supabase; otherwise they use `src/data/mockPosts.ts`.
+
+`PostDetailPage` includes a basic comments form that inserts into `comments_tbl` and lists comments for the current post.
+
+## Scripts
+
+- `npm run dev` — Start dev server
+- `npm run build` — Type-check and build production bundle
+- `npm run preview` — Preview the built app locally

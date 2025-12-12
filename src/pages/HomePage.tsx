@@ -1,8 +1,85 @@
 import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import { BlogCard } from '../components/BlogCard';
+import { LoadingScreen } from '../components/LoadingScreen';
 import { mockPosts } from '../data/mockPosts';
+import { supabase } from '../lib/supabaseClient';
+
+type Post = typeof mockPosts[number];
 
 export function HomePage() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setLoading(true);
+      
+      // Try WordPress first for fresh data
+      const wpUrl = import.meta.env.VITE_WP_API_URL as string | undefined;
+      if (wpUrl) {
+        try {
+          // For WordPress.com sites
+          const apiUrl = wpUrl.includes('wordpress.com')
+            ? `https://public-api.wordpress.com/rest/v1.1/sites/${wpUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}/posts?number=6&fields=ID,date,slug,title,excerpt,content,featured_image`
+            : `${wpUrl}/wp-json/wp/v2/posts?per_page=6&_fields=id,date,slug,title,excerpt,content,featured_media`;
+          
+          const res = await fetch(apiUrl);
+          if (res.ok) {
+            const data = await res.json();
+            let mapped;
+            if (wpUrl.includes('wordpress.com')) {
+              mapped = data.posts.map((p: any) => ({
+                id: p.ID,
+                date: p.date,
+                slug: p.slug,
+                title: { rendered: p.title },
+                excerpt: { rendered: p.excerpt },
+                content: { rendered: p.content },
+                _embedded: p.featured_image ? {
+                  'wp:featuredmedia': [{ source_url: p.featured_image }]
+                } : undefined
+              }));
+            } else {
+              mapped = data;
+            }
+            setPosts(mapped);
+            setLoading(false);
+            return;
+          }
+        } catch (err: any) {
+          console.warn('WordPress fetch failed, trying Supabase:', err);
+        }
+      }
+
+      // Fallback: Supabase cache
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .order('date', { ascending: false })
+        .limit(6);
+
+      if (!error && data && Array.isArray(data) && data.length > 0) {
+        setPosts(data as unknown as Post[]);
+      } else {
+        // Final fallback: mock data (take first 6)
+        setPosts(mockPosts.slice(0, 6));
+      }
+      setLoading(false);
+    };
+
+    fetchPosts();
+  }, []);
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <>
       {/* Hero Section */}
@@ -57,13 +134,13 @@ export function HomePage() {
             </span>
             <div className="flex-1 h-px bg-olive-green/30" />
             <span className="font-mono text-sm text-ink/40">
-              {mockPosts.length} posts
+              {posts.length} posts
             </span>
           </motion.div>
 
           {/* Blog Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {mockPosts.map((post, index) => (
+            {posts.map((post, index) => (
               <BlogCard key={post.id} post={post} index={index} />
             ))}
           </div>

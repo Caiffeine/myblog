@@ -7,13 +7,15 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync:wp": "tsx scripts/syncWordPressToSupabase.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.561.0",
+    "@supabase/supabase-js": "^2.46.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.10.1",
@@ -26,6 +28,9 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "cross-fetch": "^4.0.0",
+    "dotenv": "^16.4.5",
+    "tsx": "^4.19.2",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",

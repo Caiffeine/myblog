@@ -1,6 +1,12 @@
 import { motion } from 'framer-motion';
+import { useEffect } from 'react';
 
 export function AboutPage() {
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <main className="px-6 py-32 md:py-40">
       <div className="max-w-3xl mx-auto">

@@ -1,0 +1,15 @@
+A.  Introduction of yourself
+
+Halloo to whoever is reading this! I’m Jan Kobie A. Magno. For most of my life, I struggled with deciding what career path I really wanted because I had so many different interests. Even with all that indecisiveness, I always found myself drawn to anything connected to the medical field. That’s why I eventually chose nursing, and now that I’m actually living this path, it feels like a decision that fits me more and more every day. Outside of school, I love collecting different things, and lately I’ve been especially into collecting vinyl records since they just have a charm that digital music can’t replace. I also play the drums and usually go for runs on weekends to clear my mind and relieve the stress that comes with school. These little routines help keep me grounded while I navigate the busy life of a nursing student.
+
+B. Thoughts and Expectations about NI
+
+My thoughts and expectations for Nursing Informatics are that it will be both fun and a little complicated. My first impression of the subject, especially after doing this first activity, is actually quite positive. I enjoyed creating a website and having full control over how it looked and how I wanted to express myself. At the same time, it was a bit challenging because it took me a while to figure out some parts of the process. I expect that this subject will widen my knowledge not just in using digital tools, but also in understanding how technology is becoming an essential part of healthcare.
+
+C. How does creating an electronic journal compare with scribing a journal on paper?
+
+Creating an electronic journal, compared to writing on paper, actually feels a lot more intriguing and fun. You have the freedom to be creative in so many ways, by adding colors, fonts, images, or even embedding links, it makes the process more engaging and entertaining. It also feels more flexible because I can easily edit, rearrange, or update my entries without worrying about making mistakes or running out of space. Overall, electronic journaling for me makes self-expression easier and more enjoyable.
+
+D. How comfortable are you in using WordPress/ or an application in doing the exercise?
+
+I’ve tried using other website builders before, and to be honest, some of them felt easier to work with compared to WordPress. One thing I’ve noticed is that WordPress can feel a bit limiting unless you subscribe to add plugins or access certain features that can improve your site. On the other hand, other platforms I’ve used allow more flexibility and freedom to customize without so many restrictions. Even so, I feel fairly comfortable using WordPress for this exercise. I’m confident I can navigate the basic functions, explore the tools available, and figure out solutions if something seems complicated. It may take some time to fully understand all the options, but I see it as a good learning opportunity.

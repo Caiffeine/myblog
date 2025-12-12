@@ -2,11 +2,127 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { mockPosts } from '../data/mockPosts';
+import { supabase } from '../lib/supabaseClient';
+import { useEffect, useState } from 'react';
 import { formatDate, getFeaturedImage } from '../lib/utils';
+import { mapWpPost } from '../lib/wpAdapter';
+import { LoadingScreen } from '../components/LoadingScreen';
 
 export function PostDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const post = mockPosts.find((p) => p.id === Number(id));
+  const [post, setPost] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [comments, setComments] = useState<Array<{ id: number; userName: string; userComment: string; created_at: string }>>([]);
+  const [userName, setUserName] = useState('');
+  const [userComment, setUserComment] = useState('');
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+
+  // Scroll to top when id changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
+
+  useEffect(() => {
+    const fetchPost = async () => {
+      if (!id) return;
+      setLoading(true);
+      setError(null);
+      
+      const wpUrl = import.meta.env.VITE_WP_API_URL as string | undefined;
+      if (wpUrl) {
+        try {
+          // WordPress.com API
+          if (wpUrl.includes('wordpress.com')) {
+            const siteSlug = wpUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+            const res = await fetch(
+              `https://public-api.wordpress.com/rest/v1.1/sites/${siteSlug}/posts/${id}?fields=ID,date,slug,title,excerpt,content,featured_image`
+            );
+            if (res.ok) {
+              const wpPost = await res.json();
+              setPost({
+                id: wpPost.ID,
+                date: wpPost.date,
+                slug: wpPost.slug,
+                title: { rendered: wpPost.title },
+                excerpt: { rendered: wpPost.excerpt },
+                content: { rendered: wpPost.content },
+                _embedded: wpPost.featured_image ? {
+                  'wp:featuredmedia': [{ source_url: wpPost.featured_image }]
+                } : undefined
+              } as any);
+              setLoading(false);
+              return;
+            }
+          } else {
+            // Self-hosted WordPress
+            const res = await fetch(`${wpUrl}/wp-json/wp/v2/posts/${id}?_fields=id,date,slug,title,excerpt,content,featured_media`);
+            if (res.ok) {
+              const wpPost = await res.json();
+              setPost(mapWpPost(wpPost) as any);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (err: any) {
+          console.warn('WordPress fetch failed, trying Supabase:', err);
+        }
+      }
+
+      // Fallback: Supabase
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('id', Number(id))
+        .single();
+      if (error) {
+        setError(error.message);
+      } else {
+        setPost(data ?? null);
+      }
+      setLoading(false);
+    };
+
+    fetchPost();
+  }, [id]);
+
+  useEffect(() => {
+    const fetchComments = async () => {
+      if (!id) return;
+      const { data, error } = await supabase
+        .from('comments_tbl')
+        .select('id, userName, userComment, created_at')
+        .eq('post_id', Number(id))
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        setComments(data as any);
+      }
+    };
+    if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      fetchComments();
+    }
+  }, [id]);
+
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id || !userName.trim() || !userComment.trim()) return;
+    setCommentSubmitting(true);
+    const { data, error } = await supabase
+      .from('comments_tbl')
+      .insert({ post_id: Number(id), userName, userComment })
+      .select('id, userName, userComment, created_at')
+      .single();
+    if (!error && data) {
+      setComments((prev) => [data as any, ...prev]);
+      setUserName('');
+      setUserComment('');
+    }
+    setCommentSubmitting(false);
+  };
+
+  if (loading && !post) {
+    return <LoadingScreen />;
+  }
 
   if (!post) {
     return (
@@ -94,34 +210,65 @@ export function PostDetailPage() {
           transition={{ duration: 0.6, delay: 0.6 }}
           className="prose prose-lg max-w-none"
         >
-          {/* Excerpt as intro paragraph */}
-          <div
-            className="font-sans text-xl text-ink/80 leading-relaxed mb-8"
-            dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }}
-          />
-
-          {/* Placeholder for full content - would come from WordPress */}
-          <div className="font-sans text-lg text-ink/70 leading-relaxed space-y-6">
-            <p>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do 
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim 
-              ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut 
-              aliquip ex ea commodo consequat.
-            </p>
-            <p>
-              Duis aute irure dolor in reprehenderit in voluptate velit esse 
-              cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat 
-              cupidatat non proident, sunt in culpa qui officia deserunt mollit 
-              anim id est laborum.
-            </p>
-            <p>
-              Sed ut perspiciatis unde omnis iste natus error sit voluptatem 
-              accusantium doloremque laudantium, totam rem aperiam, eaque ipsa 
-              quae ab illo inventore veritatis et quasi architecto beatae vitae 
-              dicta sunt explicabo.
-            </p>
-          </div>
+          {/* Full content from WordPress */}
+          {post.content?.rendered ? (
+            <div
+              className="font-sans text-lg text-ink/70 leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: post.content.rendered }}
+            />
+          ) : (
+            <div
+              className="font-sans text-xl text-ink/80 leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }}
+            />
+          )}
         </motion.div>
+
+        {/* Comments Section */}
+        <section className="mt-16">
+          <h2 className="font-serif text-2xl text-ink mb-4">Comments</h2>
+          {import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY ? (
+            <>
+              <form onSubmit={handleSubmitComment} className="mb-8 space-y-4">
+                <input
+                  type="text"
+                  placeholder="Your name"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  className="w-full border border-border-color rounded-sm px-3 py-2 font-sans"
+                />
+                <textarea
+                  placeholder="Your comment"
+                  value={userComment}
+                  onChange={(e) => setUserComment(e.target.value)}
+                  className="w-full border border-border-color rounded-sm px-3 py-2 font-sans h-28"
+                />
+                <button
+                  type="submit"
+                  disabled={commentSubmitting}
+                  className="px-4 py-2 bg-olive-green text-white rounded-sm font-mono text-sm disabled:opacity-50"
+                >
+                  {commentSubmitting ? 'Posting…' : 'Post Comment'}
+                </button>
+              </form>
+
+              <ul className="space-y-6">
+                {comments.length === 0 && (
+                  <li className="font-sans text-ink/60">No comments yet. Be the first!</li>
+                )}
+                {comments.map((c) => (
+                  <li key={c.id} className="border border-border-color rounded-sm p-4">
+                    <div className="font-mono text-xs text-ink/50 mb-2">{new Date(c.created_at).toLocaleString()}</div>
+                    <div className="font-sans font-semibold text-ink">{c.userName}</div>
+                    <div className="font-sans text-ink/80">{c.userComment}</div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <div className="font-sans text-ink/60">Comments require Supabase to be configured.</div>
+          )}
+        </section>
 
         {/* Post Footer */}
         <motion.footer
@@ -137,6 +284,12 @@ export function PostDetailPage() {
             <ArrowLeft size={16} />
             View all posts
           </Link>
+          {loading && (
+            <div className="mt-4 font-mono text-xs text-ink/40">Loading…</div>
+          )}
+          {error && (
+            <div className="mt-4 font-mono text-xs text-red-600">{error}</div>
+          )}
         </motion.footer>
       </article>
     </main>
