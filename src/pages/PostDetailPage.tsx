@@ -29,74 +29,82 @@ export function PostDetailPage() {
       setLoading(true);
       setError(null);
       
+      let foundPost: any = null;
+
       // Try Supabase first (synced WordPress posts)
-      try {
-        const { data, error } = await supabase
-          .from('posts')
-          .select('*')
-          .eq('id', Number(id))
-          .single();
-        
-        if (!error && data) {
-          setPost(data as any);
-          setLoading(false);
-          return;
+      if (!foundPost) {
+        try {
+          const { data, error } = await supabase
+            .from('posts')
+            .select('*')
+            .eq('id', Number(id))
+            .single();
+          
+          if (!error && data) {
+            foundPost = data;
+          }
+        } catch (err) {
+          console.warn('Supabase fetch failed:', err);
         }
-      } catch (err) {
-        console.warn('Supabase fetch failed:', err);
       }
 
       // Fallback: Try WordPress for fresh data
-      const wpUrl = import.meta.env.VITE_WP_API_URL as string | undefined;
-      if (wpUrl) {
-        try {
-          // WordPress.com API
-          if (wpUrl.includes('wordpress.com')) {
-            const siteSlug = wpUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
-            const res = await fetch(
-              `https://public-api.wordpress.com/rest/v1.1/sites/${siteSlug}/posts/${id}?fields=ID,date,slug,title,excerpt,content,featured_image`
-            );
-            if (res.ok) {
-              const wpPost = await res.json();
-              setPost({
-                id: wpPost.ID,
-                date: wpPost.date,
-                slug: wpPost.slug,
-                title: { rendered: wpPost.title },
-                excerpt: { rendered: wpPost.excerpt },
-                content: { rendered: wpPost.content },
-                _embedded: wpPost.featured_image ? {
-                  'wp:featuredmedia': [{ source_url: wpPost.featured_image }]
-                } : undefined
-              } as any);
-              setLoading(false);
-              return;
+      if (!foundPost) {
+        const wpUrl = import.meta.env.VITE_WP_API_URL as string | undefined;
+        if (wpUrl) {
+          try {
+            // WordPress.com API
+            if (wpUrl.includes('wordpress.com')) {
+              const siteSlug = wpUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+              const res = await fetch(
+                `https://public-api.wordpress.com/rest/v1.1/sites/${siteSlug}/posts/${id}?fields=ID,date,slug,title,excerpt,content,featured_image`,
+                { signal: AbortSignal.timeout(5000) }
+              );
+              if (res.ok) {
+                const wpPost = await res.json();
+                foundPost = {
+                  id: wpPost.ID,
+                  date: wpPost.date,
+                  slug: wpPost.slug,
+                  title: { rendered: wpPost.title },
+                  excerpt: { rendered: wpPost.excerpt },
+                  content: { rendered: wpPost.content },
+                  _embedded: wpPost.featured_image ? {
+                    'wp:featuredmedia': [{ source_url: wpPost.featured_image }]
+                  } : undefined
+                };
+              }
+            } else {
+              // Self-hosted WordPress
+              const res = await fetch(
+                `${wpUrl}/wp-json/wp/v2/posts/${id}?_fields=id,date,slug,title,excerpt,content,featured_media`,
+                { signal: AbortSignal.timeout(5000) }
+              );
+              if (res.ok) {
+                const wpPost = await res.json();
+                foundPost = mapWpPost(wpPost);
+              }
             }
-          } else {
-            // Self-hosted WordPress
-            const res = await fetch(`${wpUrl}/wp-json/wp/v2/posts/${id}?_fields=id,date,slug,title,excerpt,content,featured_media`);
-            if (res.ok) {
-              const wpPost = await res.json();
-              setPost(mapWpPost(wpPost) as any);
-              setLoading(false);
-              return;
-            }
+          } catch (err: any) {
+            console.warn('WordPress fetch failed:', err);
           }
-        } catch (err: any) {
-          console.warn('WordPress fetch failed:', err);
         }
       }
 
       // Final fallback: Check mock data
-      const mockPost = mockPosts.find(p => p.id === Number(id));
-      if (mockPost) {
-        setPost(mockPost as any);
-        setLoading(false);
-        return;
+      if (!foundPost) {
+        const mockPost = mockPosts.find(p => p.id === Number(id));
+        if (mockPost) {
+          foundPost = mockPost;
+        }
       }
 
+      if (foundPost) {
+        setPost(foundPost as any);
+      } else {
+        setError('Post not found');
+      }
       setLoading(false);
-      setError('Post not found');
     };
 
     fetchPost();
