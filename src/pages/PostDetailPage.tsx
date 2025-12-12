@@ -31,6 +31,19 @@ export function PostDetailPage() {
       setLoading(true);
       setError(null);
       
+      // Use cached post if available to avoid empty state on refresh
+      const cachedKey = `post-cache-${id}`;
+      const cachedRaw = sessionStorage.getItem(cachedKey);
+      if (cachedRaw) {
+        try {
+          const cached = JSON.parse(cachedRaw);
+          setPost(cached);
+          setLoading(false);
+        } catch (e) {
+          console.warn('Failed to parse cached post', e);
+        }
+      }
+
       let foundPost: any = null;
 
       // Try Supabase first (synced WordPress posts)
@@ -103,21 +116,24 @@ export function PostDetailPage() {
 
       if (foundPost) {
         setPost(foundPost as any);
+        sessionStorage.setItem(cachedKey, JSON.stringify(foundPost));
         refreshAttemptRef.current = false;
       } else {
-        // Post not found - trigger a refresh redirect
-        if (!refreshAttemptRef.current) {
-          console.log('Post not found, redirecting to home to reload...');
-          refreshAttemptRef.current = true;
-          // Redirect to home, which loads all posts
-          navigate('/');
-          // After a brief moment, navigate back to this post
-          setTimeout(() => {
-            navigate(`/post/${id}`);
-          }, 500);
+        // If we had a cached post, keep showing it and avoid 404
+        if (cachedRaw) {
+          setError('');
         } else {
-          // Second attempt failed, show error
-          setError('Post not found');
+          // Post not found - trigger a refresh redirect once
+          if (!refreshAttemptRef.current) {
+            console.log('Post not found, redirecting to home to reload...');
+            refreshAttemptRef.current = true;
+            navigate('/');
+            setTimeout(() => {
+              navigate(`/post/${id}`);
+            }, 500);
+          } else {
+            setError('Post not found');
+          }
         }
       }
       setLoading(false);
