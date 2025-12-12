@@ -129,7 +129,7 @@ export function PostDetailPage() {
         config: { broadcast: { self: true } }
       });
       
-      const subscription = channel
+      channel
         .on(
           'postgres_changes',
           {
