@@ -334,7 +334,7 @@ export function MusicPlayer() {
                     aria-label={shuffle ? 'Disable shuffle' : 'Enable shuffle'}
                     data-tooltip={shuffle ? 'Shuffle on' : 'Shuffle off'}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="pointer-events-none">
                       <polyline points="16 3 21 3 21 8"/>
                       <line x1="4" y1="20" x2="21" y2="3"/>
                       <polyline points="21 16 21 21 16 21"/>
@@ -378,7 +378,7 @@ export function MusicPlayer() {
                     aria-label={repeatMode === 'off' ? 'Enable repeat' : repeatMode === 'one' ? 'Repeat one' : 'Repeat all'}
                     data-tooltip={repeatMode === 'off' ? 'Repeat off' : repeatMode === 'one' ? 'Repeat one' : 'Repeat all'}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="pointer-events-none">
                       <polyline points="17 1 21 5 17 9"/>
                       <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
                       <polyline points="7 23 3 19 7 15"/>
