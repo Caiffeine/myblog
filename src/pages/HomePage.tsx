@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { BlogCard } from '../components/BlogCard';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { mockPosts } from '../data/mockPosts';
@@ -10,10 +10,21 @@ type Post = typeof mockPosts[number];
 export function HomePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [showLoadingScreen, setShowLoadingScreen] = useState<boolean>(true);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
+    // Show loading screen for at least 800ms on every mount (page refresh)
+    setShowLoadingScreen(true);
+    loadingTimeoutRef.current = setTimeout(() => {
+      setShowLoadingScreen(false);
+    }, 800);
+
+    return () => {
+      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -82,7 +93,7 @@ export function HomePage() {
     fetchPosts();
   }, []);
 
-  if (loading) {
+  if (showLoadingScreen || loading) {
     return <LoadingScreen />;
   }
 
