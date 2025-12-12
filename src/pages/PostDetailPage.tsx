@@ -115,8 +115,11 @@ export function PostDetailPage() {
       fetchComments();
       
       // Subscribe to real-time updates for this post's comments
-      const subscription = supabase
-        .channel(`comments-${id}`)
+      const channel = supabase.channel(`comments-post-${id}`, {
+        config: { broadcast: { self: true } }
+      });
+      
+      const subscription = channel
         .on(
           'postgres_changes',
           {
@@ -126,15 +129,22 @@ export function PostDetailPage() {
             filter: `post_id=eq.${id}`
           },
           (payload) => {
-            // Add new comment to the list
+            console.log('New comment received:', payload);
             const newComment = payload.new as any;
-            setComments((prev) => [newComment, ...prev]);
+            setComments((prev) => {
+              // Avoid duplicates if the comment was already added optimistically
+              const exists = prev.some(c => c.id === newComment.id);
+              if (exists) return prev;
+              return [newComment, ...prev];
+            });
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log('Subscription status:', status);
+        });
       
       return () => {
-        subscription.unsubscribe();
+        channel.unsubscribe();
       };
     }
   }, [id]);
