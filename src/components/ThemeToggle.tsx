@@ -9,7 +9,8 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       className="fixed top-6 left-6 z-50 flex items-center gap-2 bg-paper dark:bg-ink border border-border-color dark:border-ink/50 px-3 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 group"
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      title={isDark ? 'Light mode' : 'Dark mode'}
+      data-tooltip={isDark ? 'Light mode' : 'Dark mode'}
+      data-tooltip-position="bottom"
     >
       {/* Sun icon */}
       <svg 

@@ -6,6 +6,10 @@ const SONGS = [
   { file: '/music/Is It a Crime - Sade.mp3', title: 'Is It a Crime', artist: 'Sade' },
   { file: '/music/Champagne Supernova - Oasis.mp3', title: 'Champagne Supernova', artist: 'Oasis' },
   { file: '/music/Here Comes The Sun - The Beatles.mp3', title: 'Here Comes The Sun', artist: 'The Beatles' },
+  { file: '/music/Every Breath You Take - The Police.mp3', title: 'Every Breath You Take', artist: 'The Police' },
+  { file: '/music/Everybody Wants To Rule The World - Tears For Fears.mp3', title: 'Everybody Wants To Rule The World', artist: 'Tears For Fears' },
+  { file: '/music/Silver Springs - Fleetwood Mac.mp3', title: 'Silver Springs', artist: 'Fleetwood Mac' },
+  { file: '/music/There Is a Light That Never Goes Out - The Smiths.mp3', title: 'There Is a Light That Never Goes Out', artist: 'The Smiths' },
 ];
 
 // Spinning Vinyl Component
@@ -82,6 +86,9 @@ export function MusicPlayer() {
   const [volume, setVolume] = useState(0.2);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [repeatMode, setRepeatMode] = useState<'off' | 'one' | 'all'>('off');
+  const [shuffle, setShuffle] = useState(false);
+  const [shuffleHistory, setShuffleHistory] = useState<number[]>([0]);
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const currentSong = SONGS[currentTrack];
@@ -108,8 +115,31 @@ export function MusicPlayer() {
     setIsPlaying(!isPlaying);
   };
 
-  const nextTrack = () => setCurrentTrack((prev) => (prev + 1) % SONGS.length);
-  const prevTrack = () => setCurrentTrack((prev) => (prev - 1 + SONGS.length) % SONGS.length);
+  const getRandomTrack = (exclude: number) => {
+    const available = SONGS.map((_, i) => i).filter(i => i !== exclude);
+    return available[Math.floor(Math.random() * available.length)];
+  };
+
+  const nextTrack = () => {
+    if (shuffle) {
+      const next = getRandomTrack(currentTrack);
+      setShuffleHistory(prev => [...prev, next]);
+      setCurrentTrack(next);
+    } else {
+      setCurrentTrack((prev) => (prev + 1) % SONGS.length);
+    }
+  };
+
+  const prevTrack = () => {
+    if (shuffle && shuffleHistory.length > 1) {
+      const newHistory = [...shuffleHistory];
+      newHistory.pop();
+      setShuffleHistory(newHistory);
+      setCurrentTrack(newHistory[newHistory.length - 1]);
+    } else {
+      setCurrentTrack((prev) => (prev - 1 + SONGS.length) % SONGS.length);
+    }
+  };
 
   const handleTimeUpdate = () => {
     if (!audioRef.current) return;
@@ -121,7 +151,29 @@ export function MusicPlayer() {
     setDuration(audioRef.current.duration);
   };
 
-  const handleEnded = () => nextTrack();
+  const handleEnded = () => {
+    if (repeatMode === 'one') {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play();
+      }
+    } else if (repeatMode === 'all' || currentTrack < SONGS.length - 1 || shuffle) {
+      nextTrack();
+    } else {
+      setIsPlaying(false);
+    }
+  };
+
+  const cycleRepeatMode = () => {
+    setRepeatMode(prev => prev === 'off' ? 'all' : prev === 'all' ? 'one' : 'off');
+  };
+
+  const toggleShuffle = () => {
+    setShuffle(prev => !prev);
+    if (!shuffle) {
+      setShuffleHistory([currentTrack]);
+    }
+  };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!audioRef.current) return;
@@ -274,7 +326,23 @@ export function MusicPlayer() {
                 </div>
 
                 {/* Playback Controls */}
-                <div className="flex items-center justify-center gap-6 mb-4">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  {/* Shuffle button */}
+                  <button 
+                    onClick={toggleShuffle} 
+                    className={`p-2 transition-colors ${shuffle ? 'text-olive-green' : 'text-ink/40 hover:text-ink/60'}`}
+                    aria-label={shuffle ? 'Disable shuffle' : 'Enable shuffle'}
+                    data-tooltip={shuffle ? 'Shuffle on' : 'Shuffle off'}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="16 3 21 3 21 8"/>
+                      <line x1="4" y1="20" x2="21" y2="3"/>
+                      <polyline points="21 16 21 21 16 21"/>
+                      <line x1="15" y1="15" x2="21" y2="21"/>
+                      <line x1="4" y1="4" x2="9" y2="9"/>
+                    </svg>
+                  </button>
+
                   <button onClick={prevTrack} className="p-2 text-ink/60 hover:text-olive-green transition-colors" aria-label="Previous">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
@@ -301,6 +369,24 @@ export function MusicPlayer() {
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
                     </svg>
+                  </button>
+
+                  {/* Repeat button */}
+                  <button 
+                    onClick={cycleRepeatMode} 
+                    className={`p-2 transition-colors relative ${repeatMode !== 'off' ? 'text-olive-green' : 'text-ink/40 hover:text-ink/60'}`}
+                    aria-label={repeatMode === 'off' ? 'Enable repeat' : repeatMode === 'one' ? 'Repeat one' : 'Repeat all'}
+                    data-tooltip={repeatMode === 'off' ? 'Repeat off' : repeatMode === 'one' ? 'Repeat one' : 'Repeat all'}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="17 1 21 5 17 9"/>
+                      <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                      <polyline points="7 23 3 19 7 15"/>
+                      <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                    </svg>
+                    {repeatMode === 'one' && (
+                      <span className="absolute -top-0.5 -right-0.5 text-[8px] font-bold text-olive-green">1</span>
+                    )}
                   </button>
                 </div>
 
