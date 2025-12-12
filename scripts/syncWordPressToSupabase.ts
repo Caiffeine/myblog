@@ -7,7 +7,6 @@
   Notes:
     - Uses Supabase service key (server-side) to bypass RLS for upsert.
     - Maps WP fields to the app's mockPosts schema stored in Postgres.
-    - Deletes posts from Supabase if they no longer exist in WordPress.
 */
 
 import 'dotenv/config'
@@ -62,11 +61,7 @@ async function main() {
 
   const supabase = createClient(supabaseUrl, serviceKey)
 
-  // eslint-disable-next-line no-console
-  console.log('Fetching WordPress posts...')
   const wpPosts = await fetchWpPosts(wpUrl)
-  // eslint-disable-next-line no-console
-  console.log(`Found ${wpPosts.length} posts in WordPress`)
 
   // Map to DB rows matching posts schema
   const rows = wpPosts.map((p) => ({
@@ -79,37 +74,7 @@ async function main() {
     featured_media: typeof p.featured_media === 'string' ? p.featured_media : null,
   }))
 
-  // Get current posts in Supabase
-  // eslint-disable-next-line no-console
-  console.log('Fetching posts from Supabase...')
-  const { data: supabasePosts, error: fetchError } = await supabase
-    .from('posts')
-    .select('id')
-
-  if (fetchError) throw fetchError
-
-  const supabaseIds = (supabasePosts ?? []).map(p => p.id)
-  const wpIds = wpPosts.map(p => p.id)
-
-  // Find posts to delete (in Supabase but not in WordPress)
-  const postsToDelete = supabaseIds.filter(id => !wpIds.includes(id))
-
-  if (postsToDelete.length > 0) {
-    // eslint-disable-next-line no-console
-    console.log(`Deleting ${postsToDelete.length} posts that were removed from WordPress...`)
-    const { error: deleteError } = await supabase
-      .from('posts')
-      .delete()
-      .in('id', postsToDelete)
-
-    if (deleteError) throw deleteError
-    // eslint-disable-next-line no-console
-    console.log(`Deleted ${postsToDelete.length} posts`)
-  }
-
   // Upsert into posts table by primary key id
-  // eslint-disable-next-line no-console
-  console.log(`Upserting ${rows.length} posts to Supabase...`)
   const { error, count } = await supabase
     .from('posts')
     .upsert(rows, { onConflict: 'id', ignoreDuplicates: false })
@@ -118,8 +83,6 @@ async function main() {
   if (error) throw error
   // eslint-disable-next-line no-console
   console.log(`Synced ${count ?? rows.length} posts to Supabase`)
-  // eslint-disable-next-line no-console
-  console.log('Sync completed successfully!')
 }
 
 main().catch((err) => {
