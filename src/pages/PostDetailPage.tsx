@@ -1,7 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
-import { mockPosts } from '../data/mockPosts';
 import { supabase } from '../lib/supabaseClient';
 import { useEffect, useState } from 'react';
 import { formatDate, getFeaturedImage } from '../lib/utils';
