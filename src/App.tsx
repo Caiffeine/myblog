@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { HomePage } from './pages/HomePage';
 import { AboutPage } from './pages/AboutPage';
 import { BlogsPage } from './pages/BlogsPage';
 import { PostDetailPage } from './pages/PostDetailPage';
+import { AdminLoginPage } from './pages/AdminLoginPage';
+import { AdminDashboard } from './pages/AdminDashboard';
 import './App.css';
 
 function App() {
+  const location = useLocation();
   const [showWelcome, setShowWelcome] = useState(true);
+  const isAdminPage = location.pathname.startsWith('/admin');
 
   useEffect(() => {
     // Check if user has seen the welcome screen before
@@ -32,8 +36,8 @@ function App() {
       {/* Noise texture overlay */}
       <div className="noise-overlay" aria-hidden="true" />
 
-      {/* Floating Navigation - hidden during welcome */}
-      {!showWelcome && <Navbar />}
+      {/* Floating Navigation - hidden on admin pages */}
+      {!isAdminPage && !showWelcome && <Navbar />}
 
       {/* Page Routes */}
       <Routes>
@@ -41,6 +45,8 @@ function App() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/blogs" element={<BlogsPage />} />
         <Route path="/post/:id" element={<PostDetailPage />} />
+        <Route path="/admin" element={<AdminLoginPage />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
       </Routes>
 
       {/* Footer */}

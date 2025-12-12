@@ -11,7 +11,7 @@ export function HomePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [showLoadingScreen, setShowLoadingScreen] = useState<boolean>(true);
-  const loadingTimeoutRef = useRef<NodeJS.Timeout>();
+  const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Scroll to top on mount
   useEffect(() => {
