@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { mockPosts } from '../data/mockPosts';
 import { useEffect, useState } from 'react';
 import { formatDate, getFeaturedImage } from '../lib/utils';
 import { mapWpPost } from '../lib/wpAdapter';
@@ -86,7 +87,16 @@ export function PostDetailPage() {
         }
       }
 
+      // Final fallback: Check mock data
+      const mockPost = mockPosts.find(p => p.id === Number(id));
+      if (mockPost) {
+        setPost(mockPost as any);
+        setLoading(false);
+        return;
+      }
+
       setLoading(false);
+      setError('Post not found');
     };
 
     fetchPost();
@@ -165,7 +175,8 @@ export function PostDetailPage() {
         console.error('Error submitting comment:', error);
         alert(`Error posting comment: ${error.message}`);
       } else if (data) {
-        setComments((prev) => [data as any, ...prev]);
+        // Don't add optimistically - let real-time handle it
+        // This prevents duplicates since the real-time subscription will add it
         setUserName('');
         setUserComment('');
       }
