@@ -86,7 +86,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="font-mono text-sm md:text-base text-paper/80 tracking-widest uppercase mb-8"
         >
-          A digital archive of thoughts and reflections
+          A slow unraveling of who I am becoming
         </motion.p>
 
         {/* Decorative line */}

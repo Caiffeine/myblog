@@ -12,6 +12,8 @@ export function HomePage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [showLoadingScreen, setShowLoadingScreen] = useState<boolean>(true);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [typedText, setTypedText] = useState<string>('');
+  const fullText = 'A slow unraveling of who I am becoming.';
 
   // Scroll to top on mount
   useEffect(() => {
@@ -26,6 +28,23 @@ export function HomePage() {
       if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
     };
   }, []);
+
+  // Typing animation effect
+  useEffect(() => {
+    if (showLoadingScreen) return; // Don't start typing until loading screen is done
+    
+    let currentIndex = 0;
+    const typingInterval = setInterval(() => {
+      if (currentIndex <= fullText.length) {
+        setTypedText(fullText.slice(0, currentIndex));
+        currentIndex++;
+      } else {
+        clearInterval(typingInterval);
+      }
+    }, 50); // 50ms per character
+
+    return () => clearInterval(typingInterval);
+  }, [showLoadingScreen]);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -102,29 +121,31 @@ export function HomePage() {
       {/* Hero Section */}
       <header className="relative px-6 py-24 md:py-32 lg:py-40 text-center">
         <div className="max-w-4xl mx-auto">
-          {/* Main Title - Staggered reveal */}
-          <motion.h1
+          {/* Main Title with background gif - Staggered reveal */}
+          <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="font-serif text-6xl md:text-7xl lg:text-8xl font-semibold text-ink tracking-tight leading-none"
-          >
-            Kobie's Blog
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 0.6,
-              delay: 0.3,
-              ease: [0.25, 0.46, 0.45, 0.94],
+            className="relative rounded-lg overflow-hidden py-12 px-8"
+            style={{
+              backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(/hero-card-bg.gif)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
             }}
-            className="font-mono text-lg md:text-xl text-olive-green mt-6 tracking-wide"
           >
-            A digital archive.
-          </motion.p>
+            <h1 
+              className="font-serif text-6xl md:text-7xl lg:text-8xl font-semibold text-white tracking-tight leading-none"
+              style={{ textShadow: '0 4px 12px rgba(95, 111, 82, 0.6), 0 2px 6px rgba(95, 111, 82, 0.4)' }}
+            >
+              Kobie's Blog
+            </h1>
+            <p 
+              className="font-mono text-lg md:text-xl text-white/90 mt-6 tracking-wide min-h-[2rem]"
+              style={{ textShadow: '0 2px 8px rgba(95, 111, 82, 0.5), 0 1px 4px rgba(95, 111, 82, 0.3)' }}
+            >
+              {typedText}
+            </p>
+          </motion.div>
 
           {/* Decorative line */}
           <motion.div
@@ -135,6 +156,18 @@ export function HomePage() {
           />
         </div>
       </header>
+
+      {/* Subtitle */}
+      <div className="px-6 pb-8">
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
+          className="font-mono text-base md:text-lg text-olive-green/80 tracking-wide text-center"
+        >
+          Spinning Stories: Curating memories and moments of becoming
+        </motion.p>
+      </div>
 
       {/* Blog Grid Section */}
       <main className="px-6 pb-24">
