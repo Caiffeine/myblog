@@ -110,8 +110,32 @@ export function PostDetailPage() {
         console.error('Exception fetching comments:', err);
       }
     };
+    
     if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
       fetchComments();
+      
+      // Subscribe to real-time updates for this post's comments
+      const subscription = supabase
+        .channel(`comments-${id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'comments_tbl',
+            filter: `post_id=eq.${id}`
+          },
+          (payload) => {
+            // Add new comment to the list
+            const newComment = payload.new as any;
+            setComments((prev) => [newComment, ...prev]);
+          }
+        )
+        .subscribe();
+      
+      return () => {
+        subscription.unsubscribe();
+      };
     }
   }, [id]);
 
