@@ -8,6 +8,7 @@ import { BlogsPage } from './pages/BlogsPage';
 import { PostDetailPage } from './pages/PostDetailPage';
 import { AdminLoginPage } from './pages/AdminLoginPage';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { MusicPlayer } from './components/MusicPlayer';
 import './App.css';
 
 function App() {
@@ -48,6 +49,9 @@ function App() {
         <Route path="/admin" element={<AdminLoginPage />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
       </Routes>
+
+      {/* Music Player - Fixed at bottom right */}
+      {!isAdminPage && !showWelcome && <MusicPlayer />}
 
       {/* Footer */}
       <footer className="border-t border-border-color px-6 py-12">
