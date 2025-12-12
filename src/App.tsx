@@ -9,6 +9,7 @@ import { PostDetailPage } from './pages/PostDetailPage';
 import { AdminLoginPage } from './pages/AdminLoginPage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { MusicPlayer } from './components/MusicPlayer';
+import { ThemeToggle } from './components/ThemeToggle';
 import './App.css';
 
 function App() {
@@ -30,12 +31,15 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-paper transition-colors duration-300">
       {/* Welcome Screen - shows only on first visit */}
       {showWelcome && <WelcomeScreen onComplete={handleWelcomeComplete} />}
 
       {/* Noise texture overlay */}
       <div className="noise-overlay" aria-hidden="true" />
+
+      {/* Theme Toggle - top left */}
+      {!isAdminPage && !showWelcome && <ThemeToggle />}
 
       {/* Floating Navigation - hidden on admin pages */}
       {!isAdminPage && !showWelcome && <Navbar />}

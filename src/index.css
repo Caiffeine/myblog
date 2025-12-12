@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Custom Tailwind configuration */
+/* Custom Tailwind configuration - Light Mode (default) */
 @theme {
   --color-paper: #F2F0E9;
   --color-ink: #3A4434;
@@ -12,6 +12,14 @@
   --font-mono: 'Courier Prime', 'Courier New', monospace;
 }
 
+/* Dark Mode Variables */
+.dark {
+  --color-paper: #1a1d1a;
+  --color-ink: #E8E6E1;
+  --color-olive-green: #7A8B6E;
+  --color-border-color: #3a3f3a;
+}
+
 /* Global base styles */
 html {
   scroll-behavior: smooth;
@@ -20,6 +28,7 @@ html {
 body {
   @apply bg-paper text-ink font-sans antialiased;
   min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Noise texture overlay - creates a subtle film grain effect */
