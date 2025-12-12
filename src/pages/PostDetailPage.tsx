@@ -1,15 +1,17 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mockPosts } from '../data/mockPosts';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { formatDate, getFeaturedImage } from '../lib/utils';
 import { mapWpPost } from '../lib/wpAdapter';
 import { LoadingScreen } from '../components/LoadingScreen';
 
 export function PostDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const refreshAttemptRef = useRef(false);
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,8 +103,22 @@ export function PostDetailPage() {
 
       if (foundPost) {
         setPost(foundPost as any);
+        refreshAttemptRef.current = false;
       } else {
-        setError('Post not found');
+        // Post not found - trigger a refresh redirect
+        if (!refreshAttemptRef.current) {
+          console.log('Post not found, redirecting to home to reload...');
+          refreshAttemptRef.current = true;
+          // Redirect to home, which loads all posts
+          navigate('/');
+          // After a brief moment, navigate back to this post
+          setTimeout(() => {
+            navigate(`/post/${id}`);
+          }, 500);
+        } else {
+          // Second attempt failed, show error
+          setError('Post not found');
+        }
       }
       setLoading(false);
     };
