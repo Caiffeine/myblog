@@ -88,13 +88,19 @@ export function PostDetailPage() {
   useEffect(() => {
     const fetchComments = async () => {
       if (!id) return;
-      const { data, error } = await supabase
-        .from('comments_tbl')
-        .select('id, userName, userComment, created_at')
-        .eq('post_id', Number(id))
-        .order('created_at', { ascending: false });
-      if (!error && data) {
-        setComments(data as any);
+      try {
+        const { data, error } = await supabase
+          .from('comments_tbl')
+          .select('id, userName, userComment, created_at')
+          .eq('post_id', Number(id))
+          .order('created_at', { ascending: false });
+        if (error) {
+          console.error('Error fetching comments:', error);
+        } else if (data) {
+          setComments(data as any);
+        }
+      } catch (err) {
+        console.error('Exception fetching comments:', err);
       }
     };
     if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
@@ -106,17 +112,28 @@ export function PostDetailPage() {
     e.preventDefault();
     if (!id || !userName.trim() || !userComment.trim()) return;
     setCommentSubmitting(true);
-    const { data, error } = await supabase
-      .from('comments_tbl')
-      .insert({ post_id: Number(id), userName, userComment })
-      .select('id, userName, userComment, created_at')
-      .single();
-    if (!error && data) {
-      setComments((prev) => [data as any, ...prev]);
-      setUserName('');
-      setUserComment('');
+    
+    try {
+      const { data, error } = await supabase
+        .from('comments_tbl')
+        .insert({ post_id: Number(id), userName, userComment })
+        .select('id, userName, userComment, created_at')
+        .single();
+      
+      if (error) {
+        console.error('Error submitting comment:', error);
+        alert(`Error posting comment: ${error.message}`);
+      } else if (data) {
+        setComments((prev) => [data as any, ...prev]);
+        setUserName('');
+        setUserComment('');
+      }
+    } catch (err) {
+      console.error('Exception submitting comment:', err);
+      alert('Failed to post comment. Check console for details.');
+    } finally {
+      setCommentSubmitting(false);
     }
-    setCommentSubmitting(false);
   };
 
   if (loading && !post) {
