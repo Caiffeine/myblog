@@ -12,7 +12,7 @@ export function PostDetailPage() {
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [comments, setComments] = useState<Array<{ id: number; userName: string; userComment: string; created_at: string }>>([]);
+  const [comments, setComments] = useState<Array<{ id: number; user_name: string; user_comment: string; created_at: string }>>([]);
   const [userName, setUserName] = useState('');
   const [userComment, setUserComment] = useState('');
   const [commentSubmitting, setCommentSubmitting] = useState(false);
@@ -28,6 +28,24 @@ export function PostDetailPage() {
       setLoading(true);
       setError(null);
       
+      // Try Supabase first (synced WordPress posts)
+      try {
+        const { data, error } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('id', Number(id))
+          .single();
+        
+        if (!error && data) {
+          setPost(data as any);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Supabase fetch failed:', err);
+      }
+
+      // Fallback: Try WordPress for fresh data
       const wpUrl = import.meta.env.VITE_WP_API_URL as string | undefined;
       if (wpUrl) {
         try {
@@ -64,21 +82,10 @@ export function PostDetailPage() {
             }
           }
         } catch (err: any) {
-          console.warn('WordPress fetch failed, trying Supabase:', err);
+          console.warn('WordPress fetch failed:', err);
         }
       }
 
-      // Fallback: Supabase
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('id', Number(id))
-        .single();
-      if (error) {
-        setError(error.message);
-      } else {
-        setPost(data ?? null);
-      }
       setLoading(false);
     };
 
@@ -91,7 +98,7 @@ export function PostDetailPage() {
       try {
         const { data, error } = await supabase
           .from('comments_tbl')
-          .select('id, userName, userComment, created_at')
+          .select('id, user_name, user_comment, created_at')
           .eq('post_id', Number(id))
           .order('created_at', { ascending: false });
         if (error) {
@@ -116,8 +123,8 @@ export function PostDetailPage() {
     try {
       const { data, error } = await supabase
         .from('comments_tbl')
-        .insert({ post_id: Number(id), userName, userComment })
-        .select('id, userName, userComment, created_at')
+        .insert({ post_id: Number(id), user_name: userName, user_comment: userComment })
+        .select('id, user_name, user_comment, created_at')
         .single();
       
       if (error) {
@@ -275,8 +282,8 @@ export function PostDetailPage() {
                 {comments.map((c) => (
                   <li key={c.id} className="border border-border-color rounded-sm p-4">
                     <div className="font-mono text-xs text-ink/50 mb-2">{new Date(c.created_at).toLocaleString()}</div>
-                    <div className="font-sans font-semibold text-ink">{c.userName}</div>
-                    <div className="font-sans text-ink/80">{c.userComment}</div>
+                    <div className="font-sans font-semibold text-ink">{c.user_name}</div>
+                    <div className="font-sans text-ink/80">{c.user_comment}</div>
                   </li>
                 ))}
               </ul>

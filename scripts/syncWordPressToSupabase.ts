@@ -70,6 +70,7 @@ async function main() {
     slug: p.slug ?? null,
     title: p.title, // jsonb
     excerpt: p.excerpt, // jsonb
+    content: p.content ?? p.excerpt, // jsonb - use content if available, fallback to excerpt
     featured_media: typeof p.featured_media === 'string' ? p.featured_media : null,
   }))
 

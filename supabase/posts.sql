@@ -1,8 +1,9 @@
 -- Create posts table matching the app's mock structure
 create table if not exists public.posts (
-  id bigint primary key generated always as identity,
+  id bigint primary key,           -- WordPress post ID (not auto-generated)
   title jsonb not null,            -- { rendered: string }
   excerpt jsonb not null,          -- { rendered: string }
+  content jsonb null,              -- { rendered: string } - full post content
   date text not null,              -- ISO date string
   featured_media text null,        -- optional URL
   slug text unique null

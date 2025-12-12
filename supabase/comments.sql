@@ -2,8 +2,8 @@
 create table if not exists public.comments_tbl (
   id bigint primary key generated always as identity,
   post_id bigint not null,
-  userName text not null,
-  userComment text not null,
+  user_name text not null,
+  user_comment text not null,
   created_at timestamptz not null default now(),
   constraint fk_comments_post
     foreign key (post_id)
@@ -27,6 +27,3 @@ on public.comments_tbl
 for insert
 to anon
 with check (true);
-
--- Optional: allow deleting own comments if you later add auth; for now, disable deletes/updates via anon
--- You can add stricter checks or move to auth users later.

@@ -20,7 +20,24 @@ export function HomePage() {
     const fetchPosts = async () => {
       setLoading(true);
       
-      // Try WordPress first for fresh data
+      // Try Supabase first (synced WordPress posts)
+      try {
+        const { data, error } = await supabase
+          .from('posts')
+          .select('*')
+          .order('date', { ascending: false })
+          .limit(6);
+
+        if (!error && data && Array.isArray(data) && data.length > 0) {
+          setPosts(data as unknown as Post[]);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Supabase fetch failed:', err);
+      }
+
+      // Fallback: Try WordPress for fresh data
       const wpUrl = import.meta.env.VITE_WP_API_URL as string | undefined;
       if (wpUrl) {
         try {
@@ -53,23 +70,12 @@ export function HomePage() {
             return;
           }
         } catch (err: any) {
-          console.warn('WordPress fetch failed, trying Supabase:', err);
+          console.warn('WordPress fetch failed:', err);
         }
       }
 
-      // Fallback: Supabase cache
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .order('date', { ascending: false })
-        .limit(6);
-
-      if (!error && data && Array.isArray(data) && data.length > 0) {
-        setPosts(data as unknown as Post[]);
-      } else {
-        // Final fallback: mock data (take first 6)
-        setPosts(mockPosts.slice(0, 6));
-      }
+      // Final fallback: mock data (take first 6)
+      setPosts(mockPosts.slice(0, 6));
       setLoading(false);
     };
 
