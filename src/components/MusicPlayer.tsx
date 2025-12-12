@@ -437,13 +437,13 @@ export function MusicPlayer() {
                         }`}
                       >
                         {/* Mini vinyl indicator */}
-                        <div className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center ${
-                          index === currentTrack ? 'bg-gray-900' : 'bg-gray-200'
+                        <div className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center ${
+                          index === currentTrack ? 'bg-ink dark:bg-paper' : 'bg-border-color dark:bg-ink/50'
                         }`}>
                           {index === currentTrack ? (
                             <div className={`w-2 h-2 rounded-full bg-olive-green ${isPlaying ? 'animate-pulse' : ''}`} />
                           ) : (
-                            <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-ink/30 dark:bg-paper/30" />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">

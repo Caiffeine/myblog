@@ -107,16 +107,16 @@ a, button {
 }
 
 ::-webkit-scrollbar-track {
-  background: #F2F0E9;
+  background: var(--color-paper);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D1D1C7;
+  background: var(--color-border-color);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #5F6F52;
+  background: var(--color-olive-green);
 }
 
 /* Line clamp utility */
