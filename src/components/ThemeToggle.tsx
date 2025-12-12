@@ -19,7 +19,7 @@ export function ThemeToggle() {
         fill="none" 
         stroke="currentColor" 
         strokeWidth="2"
-        className={`text-olive-green transition-all duration-300 ${isDark ? 'opacity-30 scale-75' : 'opacity-100 scale-100'}`}
+        className={`transition-all duration-300 ${isDark ? 'text-olive-green opacity-30 scale-75' : 'text-white opacity-100 scale-100'}`}
       >
         <circle cx="12" cy="12" r="5"/>
         <line x1="12" y1="1" x2="12" y2="3"/>
